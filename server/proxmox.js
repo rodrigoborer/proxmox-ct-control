@@ -61,3 +61,13 @@ export function startContainer(node, vmid) {
 export function stopContainer(node, vmid) {
   return unwrap(client.post(`/nodes/${node}/lxc/${vmid}/status/stop`));
 }
+
+// "shutdown" pede desligamento gracioso (ACPI/systemd dentro do container).
+export function shutdownContainer(node, vmid) {
+  return unwrap(client.post(`/nodes/${node}/lxc/${vmid}/status/shutdown`));
+}
+
+// "reboot" faz shutdown gracioso seguido de start, como uma unidade só no Proxmox.
+export function rebootContainer(node, vmid) {
+  return unwrap(client.post(`/nodes/${node}/lxc/${vmid}/status/reboot`));
+}
