@@ -35,8 +35,8 @@ npm install
 npm start
 ```
 
-Acesse `http://localhost:3000`, abra o menu de configurações (⚙) e escolha o
-node e o container que o app vai controlar.
+Acesse `http://localhost:3000`, abra o menu de configurações (⚙) e marque os
+containers que o app vai controlar (pode selecionar quantos quiser).
 
 ## 3. Expor via Cloudflare Tunnel
 
@@ -85,21 +85,27 @@ Acesse a URL (local ou via túnel) pelo Chrome/Safari no celular → "Adicionar
 
 ## Endpoints da API interna
 
-| Método | Rota                      | O que faz                                   |
-|--------|----------------------------|----------------------------------------------|
-| GET    | `/api/settings`            | Node/container atualmente configurados       |
-| POST   | `/api/settings`            | Salva `{ node, vmid }`                        |
-| GET    | `/api/nodes`                | Lista nodes do cluster                        |
-| GET    | `/api/nodes/:node/lxc`     | Lista containers LXC do node                  |
-| GET    | `/api/container/status`    | Status do container configurado               |
-| POST   | `/api/container/start`     | Inicia o container configurado                |
-| POST   | `/api/container/stop`      | Para o container (stop direto, sem ACPI)      |
+| Método | Rota                                  | O que faz                                          |
+|--------|-----------------------------------------|------------------------------------------------------|
+| GET    | `/api/settings`                        | Containers atualmente selecionados                   |
+| POST   | `/api/settings`                        | Salva `{ containers: [{ node, vmid }, ...] }`         |
+| GET    | `/api/all-containers`                  | Lista todos os containers de todos os nodes           |
+| GET    | `/api/containers`                      | Status de todos os containers selecionados            |
+| POST   | `/api/containers/:node/:vmid/start`    | Inicia o container                                    |
+| POST   | `/api/containers/:node/:vmid/stop`     | Para o container (stop direto, sem ACPI)              |
+| POST   | `/api/containers/:node/:vmid/shutdown` | Desligamento gracioso (ACPI/systemd dentro do CT)      |
+| POST   | `/api/containers/:node/:vmid/restart`  | Reinicia (shutdown gracioso + start)                  |
 
 ## Notas
 
 - `stop` corta a execução direto (equivalente a tirar o cabo de força), sem
-  esperar o container desligar sozinho.
-- `settings.json` na raiz guarda a seleção atual — não precisa de banco de
-  dados para esse escopo.
+  esperar o container desligar sozinho. `shutdown` pede um desligamento
+  gracioso. `restart` é o reboot nativo do Proxmox (shutdown gracioso + start).
+- Você pode selecionar quantos containers quiser na tela de Configurações —
+  cada um aparece como um card independente na tela principal, ordenado por
+  número do container (vmid).
+- `settings.json` na raiz guarda a seleção atual no formato
+  `{ "containers": [{ "node": "pve", "vmid": "105" }, ...] }` — não precisa de
+  banco de dados para esse escopo.
 - Se o certificado do Proxmox for self-signed (padrão), deixe
   `PROXMOX_INSECURE_SSL=true` no `.env`.
