@@ -3,20 +3,17 @@ const settingsView = document.getElementById("settingsView");
 const settingsBtn = document.getElementById("settingsBtn");
 const backBtn = document.getElementById("backBtn");
 
-const ctLabel = document.getElementById("ctLabel");
-const statusDot = document.getElementById("statusDot");
-const statusText = document.getElementById("statusText");
-const uptimeEl = document.getElementById("uptime");
-const errorMsg = document.getElementById("errorMsg");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
+const cardList = document.getElementById("cardList");
+const emptyMsg = document.getElementById("emptyMsg");
+const cardTemplate = document.getElementById("cardTemplate");
 
-const nodeSelect = document.getElementById("nodeSelect");
-const ctSelect = document.getElementById("ctSelect");
+const checkboxList = document.getElementById("checkboxList");
 const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 const settingsMsg = document.getElementById("settingsMsg");
 
 let pollTimer = null;
+// node+vmid -> elemento do card, pra não recriar o DOM a cada poll
+const cardEls = new Map();
 
 async function api(path, opts = {}) {
   const res = await fetch(`/api${path}`, {
@@ -32,57 +29,108 @@ function fmtUptime(seconds) {
   if (!seconds) return "";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
+  if (h === 0) return `ativo há ${m}min`;
   return `ativo há ${h}h ${m}min`;
 }
 
-async function refreshStatus() {
+function keyOf(c) {
+  return `${c.node}:${c.vmid}`;
+}
+
+function ensureCard(container) {
+  const key = keyOf(container);
+  if (cardEls.has(key)) return cardEls.get(key);
+
+  const node = cardTemplate.content.firstElementChild.cloneNode(true);
+  node.dataset.node = container.node;
+  node.dataset.vmid = container.vmid;
+
+  node.querySelectorAll("[data-action]").forEach((btn) => {
+    btn.addEventListener("click", () => runAction(container.node, container.vmid, btn.dataset.action));
+  });
+
+  cardEls.set(key, node);
+  cardList.appendChild(node);
+  return node;
+}
+
+function renderCard(node, data) {
+  const running = data.status === "running";
+  const label = node.querySelector(".ct-label");
+  const dot = node.querySelector(".status-dot");
+  const text = node.querySelector(".status-text");
+  const uptime = node.querySelector(".uptime");
+  const errorEl = node.querySelector(".card-error");
+
+  label.textContent = data.name ? `${data.name} (${data.vmid})` : `CT ${data.vmid}`;
+
+  if (data.error) {
+    dot.className = "status-dot status-unknown";
+    text.textContent = "Indisponível";
+    uptime.textContent = "";
+    errorEl.textContent = data.error;
+  } else {
+    dot.className = `status-dot ${running ? "status-running" : "status-stopped"}`;
+    text.textContent = running ? "Rodando" : "Parado";
+    uptime.textContent = running ? fmtUptime(data.uptime) : "";
+    errorEl.textContent = "";
+  }
+
+  const startBtn = node.querySelector('[data-action="start"]');
+  const stopBtn = node.querySelector('[data-action="stop"]');
+  const restartBtn = node.querySelector('[data-action="restart"]');
+  const shutdownBtn = node.querySelector('[data-action="shutdown"]');
+
+  startBtn.disabled = running;
+  stopBtn.disabled = !running;
+  restartBtn.disabled = !running;
+  shutdownBtn.disabled = !running;
+}
+
+async function refreshAll() {
   try {
-    const data = await api("/container/status");
-    errorMsg.textContent = "";
-    const running = data.status === "running";
-    statusDot.className = `status-dot ${running ? "status-running" : "status-stopped"}`;
-    statusText.textContent = running ? "Rodando" : "Parado";
-    uptimeEl.textContent = running ? fmtUptime(data.uptime) : "";
-    startBtn.disabled = running;
-    stopBtn.disabled = !running;
-    ctLabel.textContent = data.name ? `${data.name} (${data.vmid ?? ""})` : "Container";
+    const containers = await api("/containers");
+    emptyMsg.classList.toggle("hidden", containers.length > 0);
+
+    const seen = new Set();
+    for (const c of containers) {
+      seen.add(keyOf(c));
+      const node = ensureCard(c);
+      renderCard(node, c);
+    }
+
+    // Remove cards de containers que saíram da configuração
+    for (const [key, node] of cardEls) {
+      if (!seen.has(key)) {
+        node.remove();
+        cardEls.delete(key);
+      }
+    }
   } catch (err) {
-    statusDot.className = "status-dot status-unknown";
-    statusText.textContent = "Indisponível";
-    uptimeEl.textContent = "";
-    errorMsg.textContent = err.message;
-    startBtn.disabled = true;
-    stopBtn.disabled = true;
+    emptyMsg.textContent = err.message;
+    emptyMsg.classList.remove("hidden");
   }
 }
 
 function startPolling() {
-  refreshStatus();
+  refreshAll();
   clearInterval(pollTimer);
-  pollTimer = setInterval(refreshStatus, 5000);
+  pollTimer = setInterval(refreshAll, 5000);
 }
 
-startBtn.addEventListener("click", async () => {
-  startBtn.disabled = true;
+async function runAction(node, vmid, action) {
+  const key = `${node}:${vmid}`;
+  const cardEl = cardEls.get(key);
+  const buttons = cardEl ? cardEl.querySelectorAll(".btn") : [];
+  buttons.forEach((b) => (b.disabled = true));
   try {
-    await api("/container/start", { method: "POST" });
-    setTimeout(refreshStatus, 1500);
+    await api(`/containers/${node}/${vmid}/${action}`, { method: "POST" });
+    setTimeout(refreshAll, 1500);
   } catch (err) {
-    errorMsg.textContent = err.message;
-    startBtn.disabled = false;
+    if (cardEl) cardEl.querySelector(".card-error").textContent = err.message;
+    setTimeout(refreshAll, 500);
   }
-});
-
-stopBtn.addEventListener("click", async () => {
-  stopBtn.disabled = true;
-  try {
-    await api("/container/stop", { method: "POST" });
-    setTimeout(refreshStatus, 1500);
-  } catch (err) {
-    errorMsg.textContent = err.message;
-    stopBtn.disabled = false;
-  }
-});
+}
 
 // ---- Configurações ----
 async function openSettings() {
@@ -90,42 +138,46 @@ async function openSettings() {
   settingsView.classList.remove("hidden");
   clearInterval(pollTimer);
   settingsMsg.textContent = "";
-  nodeSelect.innerHTML = "<option>Carregando…</option>";
-  ctSelect.innerHTML = "";
+  checkboxList.innerHTML = "<p class='hint'>Carregando…</p>";
 
   try {
-    const [nodes, current] = await Promise.all([api("/nodes"), api("/settings")]);
-    nodeSelect.innerHTML = nodes
-      .map((n) => `<option value="${n.node}">${n.node}</option>`)
-      .join("");
+    const [all, current] = await Promise.all([api("/all-containers"), api("/settings")]);
+    const selectedKeys = new Set(current.containers.map((c) => `${c.node}:${c.vmid}`));
 
-    if (current.node) nodeSelect.value = current.node;
-    await loadContainers(current.vmid);
+    checkboxList.innerHTML = "";
+    for (const c of all) {
+      const key = `${c.node}:${c.vmid}`;
+      const item = document.createElement("label");
+      item.className = "checkbox-item";
+      item.innerHTML = `
+        <input type="checkbox" value="${key}" ${selectedKeys.has(key) ? "checked" : ""} />
+        <span>${c.vmid} — ${c.name}</span>
+        <span class="ct-node">${c.node}</span>
+      `;
+      checkboxList.appendChild(item);
+    }
+
+    if (all.length === 0) {
+      checkboxList.innerHTML = "<p class='hint'>Nenhum container encontrado no cluster.</p>";
+    }
   } catch (err) {
+    checkboxList.innerHTML = "";
+    settingsMsg.style.color = "#ef4444";
     settingsMsg.textContent = err.message;
   }
 }
-
-async function loadContainers(preselectVmid) {
-  ctSelect.innerHTML = "<option>Carregando…</option>";
-  try {
-    const containers = await api(`/nodes/${nodeSelect.value}/lxc`);
-    ctSelect.innerHTML = containers
-      .map((c) => `<option value="${c.vmid}">${c.vmid} — ${c.name}</option>`)
-      .join("");
-    if (preselectVmid) ctSelect.value = preselectVmid;
-  } catch (err) {
-    settingsMsg.textContent = err.message;
-  }
-}
-
-nodeSelect.addEventListener("change", () => loadContainers());
 
 saveSettingsBtn.addEventListener("click", async () => {
+  const checked = [...checkboxList.querySelectorAll('input[type="checkbox"]:checked')];
+  const containers = checked.map((cb) => {
+    const [node, vmid] = cb.value.split(":");
+    return { node, vmid };
+  });
+
   try {
     await api("/settings", {
       method: "POST",
-      body: JSON.stringify({ node: nodeSelect.value, vmid: ctSelect.value }),
+      body: JSON.stringify({ containers }),
     });
     settingsMsg.style.color = "#22c55e";
     settingsMsg.textContent = "Salvo.";
