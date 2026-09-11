@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Proxmox CT Control</title>
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Proxmox CT Control</h1>
+    <button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙</button>
+  </header>
+
+  <main id="homeView" class="view">
+    <section class="status-card">
+      <div class="status-header">
+        <span id="ctLabel" class="ct-label">—</span>
+        <span id="statusDot" class="status-dot status-unknown"></span>
+      </div>
+      <div id="statusText" class="status-text">Carregando…</div>
+      <div class="uptime" id="uptime"></div>
+    </section>
+
+    <div class="actions">
+      <button id="startBtn" class="btn btn-start">Iniciar</button>
+      <button id="stopBtn" class="btn btn-stop">Parar</button>
+    </div>
+
+    <p id="errorMsg" class="error-msg"></p>
+  </main>
+
+  <main id="settingsView" class="view hidden">
+    <h2>Configurações</h2>
+
+    <label class="field">
+      Node
+      <select id="nodeSelect"></select>
+    </label>
+
+    <label class="field">
+      Container (LXC)
+      <select id="ctSelect"></select>
+    </label>
+
+    <button id="saveSettingsBtn" class="btn btn-start">Salvar</button>
+    <button id="backBtn" class="btn btn-secondary">Voltar</button>
+
+    <p id="settingsMsg" class="settings-msg"></p>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

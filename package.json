@@ -1,0 +1,16 @@
+{
+  "name": "proxmox-ct-control",
+  "version": "1.0.0",
+  "description": "PWA para monitorar e controlar containers LXC do Proxmox VE",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

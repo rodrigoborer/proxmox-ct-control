@@ -1,0 +1,137 @@
+:root {
+  --bg: #0f172a;
+  --card: #1a2436;
+  --accent: #e57000;
+  --green: #22c55e;
+  --red: #ef4444;
+  --gray: #64748b;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.topbar h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.view { padding: 0 1.25rem 2rem; max-width: 480px; margin: 0 auto; }
+.hidden { display: none; }
+
+.status-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ct-label {
+  font-size: 1rem;
+  color: var(--text-dim);
+}
+
+.status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+.status-running { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-stopped { background: var(--red); }
+.status-unknown { background: var(--gray); }
+
+.status-text {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  text-transform: capitalize;
+}
+
+.uptime {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  min-height: 1.2em;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-start { background: var(--green); color: #06210f; }
+.btn-stop { background: var(--red); color: #2a0a0a; }
+.btn-secondary { background: transparent; border: 1px solid var(--gray); color: var(--text); width: 100%; margin-top: 0.75rem; }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.error-msg, .settings-msg {
+  color: var(--red);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  min-height: 1.2em;
+}
+
+.field {
+  display: block;
+  margin-top: 1.25rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+select {
+  display: block;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid #2a3752;
+  background: var(--card);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+h2 { margin-top: 1rem; }
