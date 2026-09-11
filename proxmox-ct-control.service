@@ -1,0 +1,25 @@
+[Unit]
+Description=Proxmox CT Control (PWA)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Ajuste os dois caminhos abaixo para onde o projeto está no seu servidor
+WorkingDirectory=/opt/proxmox-ct-control
+ExecStart=/usr/bin/node server/index.js
+
+# Ajuste para o usuário/grupo que deve rodar o processo (não use root se puder evitar)
+User=nodeapp
+Group=nodeapp
+
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/opt/proxmox-ct-control/.env
+
+# Log vai para o journal (journalctl -u proxmox-ct-control)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
